@@ -1,0 +1,26 @@
+{
+  "name": "hospital-appointment",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "migrate": "prisma migrate dev --preview-feature",
+    "seed": "node prisma/seed.js",
+    "test": "jest --runInBand"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "next": "^13.5.6",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "jsonwebtoken": "^9.0.0",
+    "prisma": "^5.14.0",
+    "@prisma/client": "^5.14.0"
+  },
+  "devDependencies": {
+    "jest": "^29.6.1",
+    "cross-env": "^7.0.3"
+  }
+}
