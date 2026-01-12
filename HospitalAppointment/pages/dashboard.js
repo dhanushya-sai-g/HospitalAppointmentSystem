@@ -5,6 +5,7 @@ import Layout from '../components/Layout'
 export default function Dashboard() {
   const [user, setUser] = useState(null)
   const [appointments, setAppointments] = useState([])
+  const [timeSlots, setTimeSlots] = useState([])
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
   const [loading, setLoading] = useState(true)
@@ -19,8 +20,9 @@ export default function Dashboard() {
 
     Promise.all([
       fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch('/api/appointments', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
-    ]).then(([userData, appointmentsData]) => {
+      fetch('/api/appointments', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      userData.user?.role === 'DOCTOR' ? fetch('/api/time-slots', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()) : Promise.resolve({ slots: [] })
+    ]).then(([userData, appointmentsData, timeSlotsData]) => {
       const user = userData.user
       // Redirect hospital admins to hospital dashboard
       if (user.role === 'HOSPITAL_ADMIN') {
@@ -29,6 +31,7 @@ export default function Dashboard() {
       }
       setUser(user)
       setAppointments(appointmentsData.appointments || [])
+      setTimeSlots(timeSlotsData.slots || [])
       setLoading(false)
     }).catch(() => {
       Router.push('/login')
@@ -64,6 +67,59 @@ export default function Dashboard() {
     } else {
       setMsg(j.error || 'Failed to create slot')
     }
+  }
+
+  async function updateStatus(appointmentId, status) {
+    const token = localStorage.getItem('token')
+    const res = await fetch('/api/appointments', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ appointmentId, status })
+    })
+
+    if (res.ok) {
+      setMsg(`✓ Appointment ${status.toLowerCase()}`)
+      setTimeout(() => {
+        window.location.reload()
+      }, 1500)
+    } else {
+      setMsg('Failed to update appointment')
+    }
+  }
+
+  function getTodayStatus() {
+    if (!user || user.role !== 'DOCTOR') return null
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    // Get today's time slots
+    const todaySlots = timeSlots.filter(slot => {
+      const slotDate = new Date(slot.start)
+      slotDate.setHours(0, 0, 0, 0)
+      return slotDate.getTime() === today.getTime()
+    })
+
+    // Get today's appointments
+    const todayAppointments = appointments.filter(apt => {
+      const aptDate = new Date(apt.timeSlot?.start)
+      aptDate.setHours(0, 0, 0, 0)
+      return aptDate.getTime() === today.getTime()
+    })
+
+    const totalSlots = todaySlots.length
+    const bookedSlots = todayAppointments.length
+
+    if (totalSlots === 0) return { status: 'no-slots', color: '#gray', text: 'No slots created' }
+    if (bookedSlots === 0) return { status: 'available', color: '#28a745', text: 'All slots available' }
+    if (bookedSlots < totalSlots) return { status: 'partial', color: '#007bff', text: `${totalSlots - bookedSlots} slots available` }
+    return { status: 'full', color: '#dc3545', text: 'All slots booked' }
   }
 
   async function updateStatus(appointmentId, status) {
@@ -158,6 +214,51 @@ export default function Dashboard() {
                 <li>Overlapping slots are prevented</li>
                 <li>Patients can view and book slots</li>
               </ul>
+            </div>
+          </div>
+        )}
+
+        {user.role === 'DOCTOR' && (
+          <div className="card" style={{ marginTop: '2rem' }}>
+            <h3>Today's Appointments</h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+              <div style={{
+                width: '120px',
+                height: '120px',
+                borderRadius: '50%',
+                backgroundColor: getTodayStatus()?.color || '#gray',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '1.2rem',
+                fontWeight: 'bold',
+                textAlign: 'center',
+                boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+              }}>
+                {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </div>
+            </div>
+            <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+              <p style={{ fontSize: '1.1rem', fontWeight: 'bold', color: getTodayStatus()?.color || '#gray' }}>
+                {getTodayStatus()?.text || 'Loading...'}
+              </p>
+            </div>
+            <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+                <div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#28a745' }}>●</div>
+                  <div style={{ fontSize: '0.9rem' }}>Available</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#007bff' }}>●</div>
+                  <div style={{ fontSize: '0.9rem' }}>Partial</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#dc3545' }}>●</div>
+                  <div style={{ fontSize: '0.9rem' }}>Full</div>
+                </div>
+              </div>
             </div>
           </div>
         )}
