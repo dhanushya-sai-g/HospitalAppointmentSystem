@@ -18,24 +18,34 @@ export default function Dashboard() {
       return
     }
 
-    Promise.all([
-      fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch('/api/appointments', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      userData.user?.role === 'DOCTOR' ? fetch('/api/time-slots', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()) : Promise.resolve({ slots: [] })
-    ]).then(([userData, appointmentsData, timeSlotsData]) => {
-      const user = userData.user
-      // Redirect hospital admins to hospital dashboard
-      if (user.role === 'HOSPITAL_ADMIN') {
-        Router.push('/hospital-dashboard')
-        return
-      }
-      setUser(user)
-      setAppointments(appointmentsData.appointments || [])
-      setTimeSlots(timeSlotsData.slots || [])
-      setLoading(false)
-    }).catch(() => {
-      Router.push('/login')
-    })
+    // First get user data to determine role
+    fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(userData => {
+        const user = userData.user
+        // Redirect hospital admins to hospital dashboard
+        if (user.role === 'HOSPITAL_ADMIN') {
+          Router.push('/hospital-dashboard')
+          return
+        }
+
+        // Now fetch appointments and conditionally fetch time slots
+        const appointmentsPromise = fetch('/api/appointments', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
+        const timeSlotsPromise = user.role === 'DOCTOR' 
+          ? fetch('/api/time-slots', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()) 
+          : Promise.resolve({ slots: [] })
+
+        Promise.all([appointmentsPromise, timeSlotsPromise]).then(([appointmentsData, timeSlotsData]) => {
+          setUser(user)
+          setAppointments(appointmentsData.appointments || [])
+          setTimeSlots(timeSlotsData.slots || [])
+          setLoading(false)
+        }).catch(() => {
+          Router.push('/login')
+        })
+      }).catch(() => {
+        Router.push('/login')
+      })
   }, [])
 
   async function createSlot() {
