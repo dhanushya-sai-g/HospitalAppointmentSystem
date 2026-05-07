@@ -2,12 +2,7 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js",
   "/dashboard": "pages/dashboard.js",
-  "/api/auth/me": "pages/api/auth/me.js",
   "/login": "pages/login.js",
-  "/api/auth/login": "pages/api/auth/login.js",
-  "/api/appointments": "pages/api/appointments.js",
-  "/api/time-slots": "pages/api/time-slots.js",
   "/settings": "pages/settings.js"
 }

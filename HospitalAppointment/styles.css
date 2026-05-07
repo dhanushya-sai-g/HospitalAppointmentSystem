@@ -548,6 +548,49 @@ h6 { font-size: 1rem; }
   padding: 0.75rem;
 }
 
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 24px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.25);
+}
+
+.crop-container {
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem 0;
+}
+
+.crop-container .ReactCrop {
+  max-width: 100%;
+  max-height: 400px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
 .demo-note {
   background: rgba(59, 130, 246, 0.06);
   border-left: 4px solid rgba(59, 130, 246, 0.35);

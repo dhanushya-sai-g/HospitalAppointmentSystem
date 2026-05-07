@@ -7,23 +7,55 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     if (user.role === 'PATIENT') {
-      const appts = await prisma.appointment.findMany({ where: { patientId: user.id }, include: { timeSlot: true } })
+      const appts = await prisma.appointment.findMany({
+        where: { patientId: user.id },
+        include: {
+          timeSlot: true,
+          doctor: {
+            include: {
+              user: true
+            }
+          }
+        }
+      })
       return res.json({ appointments: appts })
     }
     if (user.role === 'DOCTOR') {
       const doctor = await prisma.doctor.findUnique({ where: { userId: user.id } })
-      const appts = await prisma.appointment.findMany({ where: { doctorId: doctor.id }, include: { timeSlot: true, patient: true } })
+      const appts = await prisma.appointment.findMany({
+        where: { doctorId: doctor.id },
+        include: {
+          timeSlot: true,
+          patient: {
+            include: {
+              user: true
+            }
+          }
+        }
+      })
       return res.json({ appointments: appts })
     }
     if (user.role === 'HOSPITAL_ADMIN') {
       // Hospital admin can see all appointments for their hospital's doctors
       const doctor = await prisma.doctor.findFirst({ where: { hospitalId: user.hospitalId } })
       if (!doctor) return res.json({ appointments: [] })
-      const appts = await prisma.appointment.findMany({ 
-        where: { 
+      const appts = await prisma.appointment.findMany({
+        where: {
           doctor: { hospitalId: user.hospitalId }
-        }, 
-        include: { timeSlot: true, patient: true, doctor: true } 
+        },
+        include: {
+          timeSlot: true,
+          patient: {
+            include: {
+              user: true
+            }
+          },
+          doctor: {
+            include: {
+              user: true
+            }
+          }
+        }
       })
       return res.json({ appointments: appts })
     }

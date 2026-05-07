@@ -23,34 +23,53 @@ export default function Dashboard() {
       return
     }
 
-    // First get user data to determine role
-    fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
-      .then(userData => {
+    async function loadDashboardData() {
+      try {
+        const meRes = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+        if (!meRes.ok) {
+          Router.push('/login')
+          return
+        }
+
+        const userData = await meRes.json()
         const user = userData.user
-        // Redirect hospital admins to hospital dashboard
+        if (!user) {
+          Router.push('/login')
+          return
+        }
+
         if (user.role === 'HOSPITAL_ADMIN') {
           Router.push('/hospital-dashboard')
           return
         }
 
-        // Now fetch appointments and conditionally fetch time slots
-        const appointmentsPromise = fetch('/api/appointments', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
-        const timeSlotsPromise = user.role === 'DOCTOR' 
-          ? fetch('/api/time-slots', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()) 
-          : Promise.resolve({ slots: [] })
+        const appointmentsRes = await fetch('/api/appointments', { headers: { Authorization: `Bearer ${token}` } })
+        if (!appointmentsRes.ok) {
+          throw new Error('Unable to load appointments')
+        }
+        const appointmentsData = await appointmentsRes.json()
 
-        Promise.all([appointmentsPromise, timeSlotsPromise]).then(([appointmentsData, timeSlotsData]) => {
-          setUser(user)
-          setAppointments(appointmentsData.appointments || [])
-          setTimeSlots(timeSlotsData.slots || [])
-          setLoading(false)
-        }).catch(() => {
-          Router.push('/login')
-        })
-      }).catch(() => {
-        Router.push('/login')
-      })
+        let timeSlotsData = { slots: [] }
+        if (user.role === 'DOCTOR') {
+          const timeSlotsRes = await fetch('/api/time-slots', { headers: { Authorization: `Bearer ${token}` } })
+          if (!timeSlotsRes.ok) {
+            throw new Error('Unable to load time slots')
+          }
+          timeSlotsData = await timeSlotsRes.json()
+        }
+
+        setUser(user)
+        setAppointments(appointmentsData.appointments || [])
+        setTimeSlots(timeSlotsData.slots || [])
+      } catch (error) {
+        console.error('Dashboard load error:', error)
+        setMsg(error?.message || 'Unable to load dashboard data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadDashboardData()
   }, [])
 
   async function createSlot() {
@@ -356,8 +375,47 @@ export default function Dashboard() {
                           </div>
                           {appointment && (
                             <div style={{ marginTop: '0.75rem', fontSize: '0.9rem', color: '#333' }}>
-                              <p style={{ margin: '0.25rem 0 0' }}><strong>Patient:</strong> {appointment.patient?.name || appointment.patient?.email}</p>
-                              <p style={{ margin: '0.25rem 0 0' }}><strong>Reason:</strong> {appointment.reason}</p>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                                {appointment.patient?.avatarUrl ? (
+                                  <img
+                                    src={appointment.patient.avatarUrl}
+                                    alt="Patient avatar"
+                                    style={{
+                                      width: '32px',
+                                      height: '32px',
+                                      borderRadius: '50%',
+                                      objectFit: 'cover',
+                                      border: '1px solid var(--border)'
+                                    }}
+                                  />
+                                ) : (
+                                  <div
+                                    style={{
+                                      width: '32px',
+                                      height: '32px',
+                                      borderRadius: '50%',
+                                      background: 'var(--secondary)',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: '0.8rem',
+                                      fontWeight: 'bold',
+                                      color: 'var(--text-light)',
+                                      border: '1px solid var(--border)'
+                                    }}
+                                  >
+                                    {appointment.patient?.name?.charAt(0)?.toUpperCase() || 'P'}
+                                  </div>
+                                )}
+                                <div>
+                                  <p style={{ margin: '0.25rem 0 0', fontWeight: 'bold' }}>
+                                    {appointment.patient?.user?.name || appointment.patient?.user?.email || 'Unknown Patient'}
+                                  </p>
+                                  <p style={{ margin: '0.1rem 0 0', fontSize: '0.8rem', color: '#666' }}>
+                                    {appointment.reason}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -386,11 +444,85 @@ export default function Dashboard() {
               {appointments.map(a => (
                 <div key={a.id} className="card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
-                    <div>
-                      <h4>{user.role === 'DOCTOR' ? `Patient: ${a.patient?.email}` : 'Doctor'}</h4>
-                      <p className="badge badge-primary" style={{ display: 'inline-block' }}>
-                        {a.status}
-                      </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      {user.role === 'DOCTOR' ? (
+                        // Show patient avatar for doctors
+                        a.patient?.user?.avatarUrl ? (
+                          <img
+                            src={a.patient.user.avatarUrl}
+                            alt="Patient avatar"
+                            style={{
+                              width: '50px',
+                              height: '50px',
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              border: '2px solid var(--primary)'
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: '50px',
+                              height: '50px',
+                              borderRadius: '50%',
+                              background: 'var(--secondary)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '1.2rem',
+                              fontWeight: 'bold',
+                              color: 'var(--text-light)',
+                              border: '2px solid var(--border)'
+                            }}
+                          >
+                            {a.patient?.user?.name?.charAt(0)?.toUpperCase() || 'P'}
+                          </div>
+                        )
+                      ) : (
+                        // Show doctor avatar for patients
+                        a.doctor?.user?.avatarUrl ? (
+                          <img
+                            src={a.doctor.user.avatarUrl}
+                            alt="Doctor avatar"
+                            style={{
+                              width: '50px',
+                              height: '50px',
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              border: '2px solid var(--primary)'
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: '50px',
+                              height: '50px',
+                              borderRadius: '50%',
+                              background: 'var(--secondary)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '1.2rem',
+                              fontWeight: 'bold',
+                              color: 'var(--text-light)',
+                              border: '2px solid var(--border)'
+                            }}
+                          >
+                            {a.doctor?.user?.name?.charAt(0)?.toUpperCase() || 'D'}
+                          </div>
+                        )
+                      )}
+                      <div>
+                        <h4>
+                          {user.role === 'DOCTOR'
+                            ? `Patient: ${a.patient?.user?.name || a.patient?.user?.email}`
+                            : `Dr. ${a.doctor?.user?.name || 'Doctor'}`
+                          }
+                        </h4>
+                        <p className="badge badge-primary" style={{ display: 'inline-block' }}>
+                          {a.status}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
@@ -398,6 +530,9 @@ export default function Dashboard() {
                     <p><strong>Date:</strong> {new Date(a.timeSlot?.start).toLocaleDateString()}</p>
                     <p><strong>Time:</strong> {new Date(a.timeSlot?.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(a.timeSlot?.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                     <p><strong>Reason:</strong> {a.reason}</p>
+                    {user.role === 'DOCTOR' && a.patient?.user?.name && (
+                      <p><strong>Patient Name:</strong> {a.patient.user.name}</p>
+                    )}
                   </div>
 
                   {user.role === 'DOCTOR' && a.status === 'PENDING' && (

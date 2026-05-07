@@ -87,14 +87,50 @@ export default function Doctor() {
         <div className="grid-2">
           <div>
             <div className="card">
-              <div className="card-header">Dr. {doctor?.user?.name || 'Doctor'}</div>
+              <div className="card-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  {doctor?.user?.avatarUrl ? (
+                    <img
+                      src={doctor.user.avatarUrl}
+                      alt="Doctor avatar"
+                      style={{
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '2px solid var(--primary)'
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '50%',
+                        background: 'var(--secondary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.5rem',
+                        fontWeight: 'bold',
+                        color: 'var(--text-light)',
+                        border: '2px solid var(--border)'
+                      }}
+                    >
+                      {doctor?.user?.name?.charAt(0)?.toUpperCase() || 'D'}
+                    </div>
+                  )}
+                  <div>
+                    <h3 style={{ margin: 0 }}>Dr. {doctor?.user?.name || 'Doctor'}</h3>
+                    <p style={{ margin: '0.25rem 0', color: 'var(--text-light)' }}>
+                      {doctor?.department?.name ?? 'Not assigned'}
+                    </p>
+                  </div>
+                </div>
+              </div>
               <div className="card-body">
                 <p><strong>Email:</strong> {doctor?.user?.email}</p>
                 <p><strong>Bio:</strong> {doctor?.bio || 'No bio available'}</p>
-                <p>
-                  <strong>Department:</strong>{' '}
-                  {doctor?.department?.name ?? 'Not assigned'}
-                </p>
               </div>
             </div>
           </div>
