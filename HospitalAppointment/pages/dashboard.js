@@ -241,7 +241,28 @@ export default function Dashboard() {
   return (
     <Layout>
       <div className="container">
-        <h1>Your Dashboard</h1>
+        <div className="page-header">
+          <div>
+            <h1>Your Dashboard</h1>
+            <p className="section-subtitle">Manage appointments, availability, and your schedule through a clean calendar view.</p>
+          </div>
+        </div>
+
+        <div className="stats-grid">
+          <div className="stat-card">
+            <h4>Appointments</h4>
+            <p>{appointments.length}</p>
+          </div>
+          <div className="stat-card">
+            <h4>Selected Day</h4>
+            <p>{getAppointmentCountForDate(selectedDay)}</p>
+          </div>
+          <div className="stat-card">
+            <h4>Available Slots</h4>
+            <p>{timeSlots.length}</p>
+          </div>
+        </div>
+
         <div className="alert alert-info">
           Signed in as <strong>{user.name || user.email}</strong> ({user.role})
         </div>

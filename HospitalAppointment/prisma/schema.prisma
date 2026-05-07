@@ -34,6 +34,7 @@ model User {
   email      String   @unique
   password   String
   name       String?
+  avatarUrl  String?
   role       Role     @default(PATIENT)
   hospitalId String?  // for hospital admins
   hospital   Hospital? @relation(fields: [hospitalId], references: [id])

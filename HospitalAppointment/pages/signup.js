@@ -94,9 +94,14 @@ export default function Signup() {
   return (
     <Layout>
       <div className="container">
-        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-          <div className="card">
-            <h1>Create Account</h1>
+        <div style={{ maxWidth: '640px', margin: '0 auto' }}>
+          <div className="card auth-card">
+            <div className="page-header">
+              <div>
+                <h1>Create Account</h1>
+                <p className="section-subtitle">Choose your role and create your profile. Hospital admins can register hospitals and invite doctors right away.</p>
+              </div>
+            </div>
             <form onSubmit={submit}>
               <div className="form-group">
                 <label>Full Name *</label>
@@ -138,12 +143,12 @@ export default function Signup() {
                 </select>
               </div>
 
-              <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>
+              <div className="alert alert-info" style={{ marginBottom: '1rem' }}>
                 Doctor accounts are created by a hospital admin; doctors cannot sign up directly.
               </div>
 
               {form.role === 'HOSPITAL_ADMIN' && (
-                <div style={{ background: '#f0f2f5', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
+                <div className="card" style={{ background: 'rgba(235, 245, 255, 0.8)', border: '1px solid rgba(59, 130, 246, 0.18)', marginTop: '1rem' }}>
                   <h4>Register Your Hospital</h4>
 
                   <div className="form-group">
@@ -167,15 +172,16 @@ export default function Signup() {
 
                   <div className="form-group">
                     <label>Departments *</label>
-                    <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.5rem' }}>
-                      Add at least one department
+                    <p style={{ fontSize: '0.9rem', color: 'var(--text-light)', marginBottom: '0.75rem' }}>
+                      Add at least one department.
                     </p>
                     {newDepartments.map((dept, idx) => (
-                      <div key={idx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      <div key={idx} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
                         <input
                           placeholder={`Department ${idx + 1}`}
                           value={dept}
                           onChange={e => updateDepartment(idx, e.target.value)}
+                          style={{ flex: 1 }}
                         />
                         {newDepartments.length > 1 && (
                           <button
@@ -200,7 +206,6 @@ export default function Signup() {
                 </div>
               )}
 
-
               {msg && <div className="alert alert-danger">{msg}</div>}
 
               <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
@@ -208,7 +213,7 @@ export default function Signup() {
               </button>
             </form>
 
-            <p style={{ marginTop: '1.5rem', textAlign: 'center', color: '#666' }}>
+            <p style={{ marginTop: '1.5rem', textAlign: 'center', color: 'var(--text-light)' }}>
               Already have an account? <a href="/login">Log in</a>
             </p>
           </div>

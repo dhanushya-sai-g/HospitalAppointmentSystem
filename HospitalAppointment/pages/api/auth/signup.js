@@ -3,7 +3,7 @@ const { hashPassword, signToken } = require('../../../lib/auth')
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
-  const { email, password, name, role, hospitalId, departmentId, bio, hospitalName, hospitalAddress, departments } = req.body
+  const { email, password, name, role, hospitalId, departmentId, bio, hospitalName, hospitalAddress, departments, avatarUrl } = req.body
   if (!email || !password) return res.status(400).json({ error: 'email and password required' })
 
   const existing = await prisma.user.findUnique({ where: { email } })
@@ -37,6 +37,7 @@ export default async function handler(req, res) {
         email,
         password: hashed,
         name,
+        avatarUrl,
         role: 'HOSPITAL_ADMIN',
         hospitalId: hospital.id
       }
@@ -53,7 +54,7 @@ export default async function handler(req, res) {
     })
   }
 
-  const user = await prisma.user.create({ data: { email, password: hashed, name, role } })
+  const user = await prisma.user.create({ data: { email, password: hashed, name, role, avatarUrl } })
 
   if (role === 'DOCTOR') {
     if (!hospitalId || !departmentId) {

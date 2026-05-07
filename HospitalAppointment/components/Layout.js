@@ -42,11 +42,13 @@ export default function Layout({ children }) {
                 {user.role === 'HOSPITAL_ADMIN' ? (
                   <>
                     <Link href="/hospital-dashboard" className="nav-link">Hospital</Link>
+                    <Link href="/settings" className="nav-link">Settings</Link>
                   </>
                 ) : (
                   <>
                     <Link href="/hospitals" className="nav-link">Hospitals</Link>
                     <Link href="/dashboard" className="nav-link">Dashboard</Link>
+                    <Link href="/settings" className="nav-link">Settings</Link>
                   </>
                 )}
                 <span className="nav-user">{user.name || user.email}</span>

@@ -166,7 +166,27 @@ export default function HospitalDashboard() {
   return (
     <Layout>
       <div className="container">
-        <h1>Hospital Dashboard</h1>
+        <div className="page-header">
+          <div>
+            <h1>Hospital Dashboard</h1>
+            <p className="section-subtitle">Overview of your hospital operations, active doctors, and appointment demand.</p>
+          </div>
+        </div>
+
+        <div className="stats-grid">
+          <div className="stat-card">
+            <h4>Doctors</h4>
+            <p>{doctors.length}</p>
+          </div>
+          <div className="stat-card">
+            <h4>Appointments</h4>
+            <p>{appointments.length}</p>
+          </div>
+          <div className="stat-card">
+            <h4>Departments</h4>
+            <p>{departments.length}</p>
+          </div>
+        </div>
 
         <div className="card" style={{ marginBottom: '2rem' }}>
           <h3>{hospital.name}</h3>

@@ -31,9 +31,14 @@ export default function Login() {
   return (
     <Layout>
       <div className="container">
-        <div style={{ maxWidth: '400px', margin: '0 auto' }}>
-          <div className="card">
-            <h1>Welcome Back</h1>
+        <div style={{ maxWidth: '430px', margin: '0 auto' }}>
+          <div className="card auth-card">
+            <div className="page-header">
+              <div>
+                <h1>Welcome Back</h1>
+                <p className="section-subtitle">Login to access your appointment schedule and manage your hospital dashboard from one modern place.</p>
+              </div>
+            </div>
             <form onSubmit={submit}>
               <div className="form-group">
                 <label>Email *</label>
@@ -64,11 +69,11 @@ export default function Login() {
               </button>
             </form>
 
-            <p style={{ marginTop: '1.5rem', textAlign: 'center', color: '#666' }}>
+            <p style={{ marginTop: '1.5rem', textAlign: 'center', color: 'var(--text-light)' }}>
               Don't have an account? <a href="/signup">Sign up</a>
             </p>
 
-            <div className="alert alert-info" style={{ marginTop: '1.5rem', fontSize: '0.875rem' }}>
+            <div className="alert alert-info demo-note">
               <strong>Demo Credentials:</strong><br/>
               Patient: patient@example.com / password<br/>
               Doctor: doc@example.com / password
