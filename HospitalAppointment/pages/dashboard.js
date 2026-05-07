@@ -10,10 +10,6 @@ export default function Dashboard() {
   const [end, setEnd] = useState('')
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [passwordMsg, setPasswordMsg] = useState('')
-  const [updatingPassword, setUpdatingPassword] = useState(false)
   const [selectedDay, setSelectedDay] = useState(() => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -106,39 +102,6 @@ export default function Dashboard() {
       }, 1500)
     } else {
       setMsg('Failed to update appointment')
-    }
-  }
-
-  async function changePassword() {
-    if (!newPassword.trim() || !confirmPassword.trim()) {
-      setPasswordMsg('Please enter the new password twice')
-      return
-    }
-    if (newPassword !== confirmPassword) {
-      setPasswordMsg('Passwords do not match')
-      return
-    }
-
-    const token = localStorage.getItem('token')
-    setUpdatingPassword(true)
-    const res = await fetch('/api/auth/me', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ password: newPassword })
-    })
-    const j = await res.json()
-    setUpdatingPassword(false)
-
-    if (res.ok) {
-      setPasswordMsg('✓ Password updated successfully')
-      setNewPassword('')
-      setConfirmPassword('')
-      setTimeout(() => setPasswordMsg(''), 3000)
-    } else {
-      setPasswordMsg(j.error || 'Failed to update password')
     }
   }
 
@@ -274,7 +237,7 @@ export default function Dashboard() {
         )}
 
         {user.role === 'DOCTOR' && (
-          <div className="grid-2">
+          <div className="grid">
             <div className="card">
               <h3>Create Time Slot</h3>
               <div className="form-group">
@@ -300,38 +263,6 @@ export default function Dashboard() {
               >
                 {loading ? 'Creating...' : 'Create Slot'}
               </button>
-            </div>
-
-            <div className="card">
-              <h3>Change Password</h3>
-              <div className="form-group">
-                <label>New Password *</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label>Confirm Password *</label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-                />
-              </div>
-              <button
-                onClick={changePassword}
-                className="btn btn-warning btn-block"
-                disabled={updatingPassword}
-              >
-                {updatingPassword ? 'Updating...' : 'Update Password'}
-              </button>
-              {passwordMsg && (
-                <div className={`alert ${passwordMsg.includes('✓') ? 'alert-success' : 'alert-danger'}`} style={{ marginTop: '1rem' }}>
-                  {passwordMsg}
-                </div>
-              )}
             </div>
           </div>
         )}

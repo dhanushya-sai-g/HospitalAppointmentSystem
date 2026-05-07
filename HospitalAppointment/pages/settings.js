@@ -16,6 +16,7 @@ export default function Settings() {
     password: '',
     confirmPassword: ''
   })
+  const [isDoctor, setIsDoctor] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -33,6 +34,7 @@ export default function Settings() {
         }
 
         setUser(data.user)
+        setIsDoctor(data.user.role === 'DOCTOR')
         setForm({
           name: data.user.name || '',
           email: data.user.email || '',
@@ -72,17 +74,17 @@ export default function Settings() {
     setSaving(true)
     const token = localStorage.getItem('token')
     const payload = {
-      name: form.name,
-      email: form.email,
       avatarUrl: avatarDataUrl
     }
 
-    if (user.role === 'DOCTOR') {
+    if (isDoctor) {
       payload.bio = form.bio
-    }
-
-    if (form.password) {
-      payload.password = form.password
+    } else {
+      payload.name = form.name
+      payload.email = form.email
+      if (form.password) {
+        payload.password = form.password
+      }
     }
 
     const res = await fetch('/api/auth/me', {
@@ -147,7 +149,9 @@ export default function Settings() {
         <div className="page-header">
           <div>
             <h1>Account Settings</h1>
-            <p className="section-subtitle">View your profile details, change your password, upload a profile picture, or delete your account.</p>
+            <p className="section-subtitle">
+              View your account details and manage your profile. Doctors may only update their bio and profile picture here.
+            </p>
           </div>
         </div>
 
@@ -176,32 +180,34 @@ export default function Settings() {
 
             <div className="form-group">
               <label>Name</label>
-              <input value={form.name} onChange={e => handleInput('name', e.target.value)} />
+              <input value={form.name} onChange={e => handleInput('name', e.target.value)} disabled={isDoctor} />
             </div>
 
             <div className="form-group">
               <label>Email</label>
-              <input type="email" value={form.email} onChange={e => handleInput('email', e.target.value)} />
+              <input type="email" value={form.email} onChange={e => handleInput('email', e.target.value)} disabled={isDoctor} />
             </div>
 
-            {user.role === 'DOCTOR' && (
-              <div className="form-group">
-                <label>Doctor Bio</label>
-                <textarea value={form.bio} onChange={e => handleInput('bio', e.target.value)} />
-              </div>
-            )}
+            <div className="form-group">
+              <label>{isDoctor ? 'Doctor Bio' : 'Bio'}</label>
+              <textarea value={form.bio} onChange={e => handleInput('bio', e.target.value)} />
+            </div>
           </div>
 
           <div className="card">
             <h3>Security</h3>
-            <div className="form-group">
-              <label>New Password</label>
-              <input type="password" value={form.password} onChange={e => handleInput('password', e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label>Confirm Password</label>
-              <input type="password" value={form.confirmPassword} onChange={e => handleInput('confirmPassword', e.target.value)} />
-            </div>
+            {!isDoctor && (
+              <>
+                <div className="form-group">
+                  <label>New Password</label>
+                  <input type="password" value={form.password} onChange={e => handleInput('password', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label>Confirm Password</label>
+                  <input type="password" value={form.confirmPassword} onChange={e => handleInput('confirmPassword', e.target.value)} />
+                </div>
+              </>
+            )}
 
             <button onClick={saveChanges} className="btn btn-primary btn-block" disabled={saving}>
               {saving ? 'Saving...' : 'Save Changes'}
