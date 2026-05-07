@@ -11,6 +11,13 @@ export default function HospitalDashboard() {
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
   const [newDept, setNewDept] = useState('')
+  const [doctorName, setDoctorName] = useState('')
+  const [doctorEmail, setDoctorEmail] = useState('')
+  const [doctorPassword, setDoctorPassword] = useState('')
+  const [doctorDepartmentId, setDoctorDepartmentId] = useState('')
+  const [doctorBio, setDoctorBio] = useState('')
+  const [doctorMsg, setDoctorMsg] = useState('')
+  const [creatingDoctor, setCreatingDoctor] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -86,6 +93,44 @@ export default function HospitalDashboard() {
     }
   }
 
+  async function createDoctor() {
+    if (!doctorName.trim() || !doctorEmail.trim() || !doctorPassword.trim() || !doctorDepartmentId) {
+      setDoctorMsg('Please provide name, email, password, and department')
+      return
+    }
+
+    const token = localStorage.getItem('token')
+    setCreatingDoctor(true)
+    const res = await fetch('/api/auth/create-doctor', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        name: doctorName,
+        email: doctorEmail,
+        password: doctorPassword,
+        departmentId: doctorDepartmentId,
+        bio: doctorBio
+      })
+    })
+    const j = await res.json()
+    setCreatingDoctor(false)
+
+    if (res.ok) {
+      setDoctorMsg('✓ Doctor account created successfully')
+      setDoctorName('')
+      setDoctorEmail('')
+      setDoctorPassword('')
+      setDoctorDepartmentId('')
+      setDoctorBio('')
+      setDoctors([...doctors, j.doctor])
+    } else {
+      setDoctorMsg(j.error || 'Failed to create doctor')
+    }
+  }
+
   if (loading) {
     return (
       <Layout>
@@ -157,15 +202,64 @@ export default function HospitalDashboard() {
           </div>
 
           <div className="card">
-            <h3>Departments ({departments.length})</h3>
-            {departments.length === 0 ? (
-              <p style={{ color: '#999' }}>No departments yet</p>
-            ) : (
-              <ul style={{ paddingLeft: '1.5rem' }}>
+            <h3>Create Doctor Account</h3>
+            <div className="form-group">
+              <label>Doctor Name *</label>
+              <input
+                placeholder="Dr. John Doe"
+                value={doctorName}
+                onChange={e => setDoctorName(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label>Email *</label>
+              <input
+                type="email"
+                placeholder="doctor@example.com"
+                value={doctorEmail}
+                onChange={e => setDoctorEmail(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label>Password *</label>
+              <input
+                type="password"
+                placeholder="Initial password"
+                value={doctorPassword}
+                onChange={e => setDoctorPassword(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label>Department *</label>
+              <select
+                value={doctorDepartmentId}
+                onChange={e => setDoctorDepartmentId(e.target.value)}
+              >
+                <option value="">Select department</option>
                 {departments.map(d => (
-                  <li key={d.id} style={{ marginBottom: '0.5rem' }}>{d.name}</li>
+                  <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
-              </ul>
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Bio</label>
+              <textarea
+                placeholder="Doctor bio or specialties"
+                value={doctorBio}
+                onChange={e => setDoctorBio(e.target.value)}
+              />
+            </div>
+            <button
+              onClick={createDoctor}
+              className="btn btn-primary btn-block"
+              disabled={creatingDoctor}
+            >
+              {creatingDoctor ? 'Creating...' : 'Create Doctor'}
+            </button>
+            {doctorMsg && (
+              <div className={`alert ${doctorMsg.includes('✓') ? 'alert-success' : 'alert-danger'}`} style={{ marginTop: '1rem' }}>
+                {doctorMsg}
+              </div>
             )}
           </div>
         </div>
@@ -174,7 +268,7 @@ export default function HospitalDashboard() {
           <h2>Doctors ({doctors.length})</h2>
           {doctors.length === 0 ? (
             <div className="alert alert-info">
-              No doctors registered yet. Doctors can sign up and select your hospital and a department.
+              No doctors registered yet. Use the form below to create doctor accounts for your hospital.
             </div>
           ) : (
             <div className="grid">

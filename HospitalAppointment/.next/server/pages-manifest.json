@@ -2,5 +2,13 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js"
+  "/": "pages/index.js",
+  "/api/auth/me": "pages/api/auth/me.js",
+  "/login": "pages/login.js",
+  "/api/auth/login": "pages/api/auth/login.js",
+  "/dashboard": "pages/dashboard.js",
+  "/hospital-dashboard": "pages/hospital-dashboard.js",
+  "/api/hospitals": "pages/api/hospitals.js",
+  "/api/doctors": "pages/api/doctors.js",
+  "/api/appointments": "pages/api/appointments.js"
 }

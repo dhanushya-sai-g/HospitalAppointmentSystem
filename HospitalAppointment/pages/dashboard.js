@@ -10,6 +10,15 @@ export default function Dashboard() {
   const [end, setEnd] = useState('')
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordMsg, setPasswordMsg] = useState('')
+  const [updatingPassword, setUpdatingPassword] = useState(false)
+  const [selectedDay, setSelectedDay] = useState(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return today
+  })
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -62,7 +71,7 @@ export default function Dashboard() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ start, end })
+      body: JSON.stringify({ start: new Date(start).toISOString(), end: new Date(end).toISOString() })
     })
     const j = await res.json()
     setLoading(false)
@@ -100,55 +109,111 @@ export default function Dashboard() {
     }
   }
 
-  function getTodayStatus() {
-    if (!user || user.role !== 'DOCTOR') return null
+  async function changePassword() {
+    if (!newPassword.trim() || !confirmPassword.trim()) {
+      setPasswordMsg('Please enter the new password twice')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordMsg('Passwords do not match')
+      return
+    }
 
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-
-    // Get today's time slots
-    const todaySlots = timeSlots.filter(slot => {
-      const slotDate = new Date(slot.start)
-      slotDate.setHours(0, 0, 0, 0)
-      return slotDate.getTime() === today.getTime()
-    })
-
-    // Get today's appointments
-    const todayAppointments = appointments.filter(apt => {
-      const aptDate = new Date(apt.timeSlot?.start)
-      aptDate.setHours(0, 0, 0, 0)
-      return aptDate.getTime() === today.getTime()
-    })
-
-    const totalSlots = todaySlots.length
-    const bookedSlots = todayAppointments.length
-
-    if (totalSlots === 0) return { status: 'no-slots', color: '#gray', text: 'No slots created' }
-    if (bookedSlots === 0) return { status: 'available', color: '#28a745', text: 'All slots available' }
-    if (bookedSlots < totalSlots) return { status: 'partial', color: '#007bff', text: `${totalSlots - bookedSlots} slots available` }
-    return { status: 'full', color: '#dc3545', text: 'All slots booked' }
-  }
-
-  async function updateStatus(appointmentId, status) {
     const token = localStorage.getItem('token')
-    const res = await fetch('/api/appointments', {
-      method: 'PATCH',
+    setUpdatingPassword(true)
+    const res = await fetch('/api/auth/me', {
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ appointmentId, status })
+      body: JSON.stringify({ password: newPassword })
     })
+    const j = await res.json()
+    setUpdatingPassword(false)
 
     if (res.ok) {
-      setMsg(`✓ Appointment ${status}`)
-      setTimeout(() => window.location.reload(), 1500)
+      setPasswordMsg('✓ Password updated successfully')
+      setNewPassword('')
+      setConfirmPassword('')
+      setTimeout(() => setPasswordMsg(''), 3000)
     } else {
-      setMsg('Failed to update appointment')
+      setPasswordMsg(j.error || 'Failed to update password')
     }
+  }
+
+  function getCalendarDays(date) {
+    const month = date.getMonth()
+    const year = date.getFullYear()
+    const firstOfMonth = new Date(year, month, 1)
+    const lastOfMonth = new Date(year, month + 1, 0)
+    const startDay = firstOfMonth.getDay()
+    const daysInMonth = lastOfMonth.getDate()
+
+    const cells = []
+    // fill previous month empty cells
+    for (let i = 0; i < startDay; i += 1) {
+      cells.push(null)
+    }
+
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      cells.push(new Date(year, month, day))
+    }
+
+    while (cells.length % 7 !== 0) {
+      cells.push(null)
+    }
+
+    const weeks = []
+    for (let i = 0; i < cells.length; i += 7) {
+      weeks.push(cells.slice(i, i + 7))
+    }
+    return weeks
+  }
+
+  function getAppointmentCountForDate(date) {
+    if (!date) return 0
+    const dayStart = new Date(date)
+    dayStart.setHours(0, 0, 0, 0)
+    const dayEnd = new Date(date)
+    dayEnd.setHours(23, 59, 59, 999)
+
+    return appointments.filter(apt => {
+      const aptDate = new Date(apt.timeSlot?.start)
+      return aptDate >= dayStart && aptDate <= dayEnd
+    }).length
+  }
+
+  function getAppointmentsForDate(date) {
+    if (!date) return []
+    const dayStart = new Date(date)
+    dayStart.setHours(0, 0, 0, 0)
+    const dayEnd = new Date(date)
+    dayEnd.setHours(23, 59, 59, 999)
+
+    return appointments.filter(apt => {
+      const aptDate = new Date(apt.timeSlot?.start)
+      return aptDate >= dayStart && aptDate <= dayEnd
+    })
+  }
+
+  function getSlotsForDate(date) {
+    if (!date) return []
+    const dayStart = new Date(date)
+    dayStart.setHours(0, 0, 0, 0)
+    const dayEnd = new Date(date)
+    dayEnd.setHours(23, 59, 59, 999)
+
+    return timeSlots
+      .filter(slot => {
+        const slotDate = new Date(slot.start)
+        return slotDate >= dayStart && slotDate <= dayEnd
+      })
+      .sort((a, b) => new Date(a.start) - new Date(b.start))
+  }
+
+  function getAppointmentForSlot(slot) {
+    return appointments.find(apt => apt.timeSlot?.id === slot.id)
   }
 
   if (loading) {
@@ -217,58 +282,138 @@ export default function Dashboard() {
             </div>
 
             <div className="card">
-              <h3>ℹ️ Tips</h3>
-              <ul style={{ textAlign: 'left', paddingLeft: '1.5rem' }}>
-                <li>Set clear availability windows</li>
-                <li>Slots are 30-60 minutes typically</li>
-                <li>Overlapping slots are prevented</li>
-                <li>Patients can view and book slots</li>
-              </ul>
+              <h3>Change Password</h3>
+              <div className="form-group">
+                <label>New Password *</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Confirm Password *</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                />
+              </div>
+              <button
+                onClick={changePassword}
+                className="btn btn-warning btn-block"
+                disabled={updatingPassword}
+              >
+                {updatingPassword ? 'Updating...' : 'Update Password'}
+              </button>
+              {passwordMsg && (
+                <div className={`alert ${passwordMsg.includes('✓') ? 'alert-success' : 'alert-danger'}`} style={{ marginTop: '1rem' }}>
+                  {passwordMsg}
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {user.role === 'DOCTOR' && (
           <div className="card" style={{ marginTop: '2rem' }}>
-            <h3>Today's Appointments</h3>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-              <div style={{
-                width: '120px',
-                height: '120px',
-                borderRadius: '50%',
-                backgroundColor: getTodayStatus()?.color || '#gray',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontSize: '1.2rem',
-                fontWeight: 'bold',
-                textAlign: 'center',
-                boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-              }}>
-                {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            <h3>Monthly Appointment Calendar</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <div style={{ fontSize: '1rem', fontWeight: 'bold' }}>
+                {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.85rem', color: '#666' }}>
+                <span>● <strong>{appointments.length}</strong> booked</span>
+                <span>● <strong>{timeSlots.length}</strong> slots</span>
               </div>
             </div>
-            <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-              <p style={{ fontSize: '1.1rem', fontWeight: 'bold', color: getTodayStatus()?.color || '#gray' }}>
-                {getTodayStatus()?.text || 'Loading...'}
-              </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.35rem', marginBottom: '1rem' }}>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(weekday => (
+                <div key={weekday} style={{ textAlign: 'center', fontSize: '0.8rem', fontWeight: 'bold', color: '#555' }}>{weekday}</div>
+              ))}
             </div>
-            <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.35rem' }}>
+              {getCalendarDays(new Date()).flat().map((day, index) => {
+                if (!day) {
+                  return <div key={`empty-${index}`} style={{ minHeight: '90px', background: '#f8f9fa', borderRadius: '8px' }} />
+                }
+                const count = getAppointmentCountForDate(day)
+                const isSelected = selectedDay && day.getTime() === selectedDay.getTime()
+                return (
+                  <button
+                    key={day.toISOString()}
+                    type="button"
+                    onClick={() => setSelectedDay(day)}
+                    style={{
+                      minHeight: '90px',
+                      borderRadius: '8px',
+                      border: isSelected ? '2px solid #007bff' : '1px solid #e0e0e0',
+                      background: isSelected ? '#e7f1ff' : '#fff',
+                      padding: '0.75rem',
+                      textAlign: 'left',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                      <span>{day.getDate()}</span>
+                      {count > 0 && <span style={{ fontSize: '0.75rem', color: '#007bff' }}>{count}</span>}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#666' }}>
+                      {count === 0 && 'No appts'}
+                      {count === 1 && '1 appointment'}
+                      {count > 1 && `${count} appointments`}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+            <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+              <h4 style={{ marginBottom: '0.75rem' }}>
+                {selectedDay ? selectedDay.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : 'Select a date to view appointments'}
+              </h4>
+              {selectedDay ? (
                 <div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#28a745' }}>●</div>
-                  <div style={{ fontSize: '0.9rem' }}>Available</div>
+                  {getSlotsForDate(selectedDay).length === 0 ? (
+                    <p style={{ color: '#666' }}>No slots available for this day.</p>
+                  ) : (
+                    getSlotsForDate(selectedDay).map(slot => {
+                      const appointment = getAppointmentForSlot(slot)
+                      return (
+                        <div
+                          key={slot.id}
+                          style={{
+                            marginBottom: '1rem',
+                            padding: '0.75rem',
+                            background: appointment ? '#fdecea' : '#eafaf1',
+                            borderRadius: '6px',
+                            border: `1px solid ${appointment ? '#dc3545' : '#28a745'}`
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <p style={{ margin: 0, fontWeight: 'bold' }}>
+                                {new Date(slot.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(slot.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                              <p style={{ margin: '0.25rem 0', color: '#555' }}>
+                                {appointment ? 'Booked slot' : 'Available slot'}
+                              </p>
+                            </div>
+                            <span className={`badge ${appointment ? 'badge-danger' : 'badge-success'}`}>
+                              {appointment ? 'Booked' : 'Available'}
+                            </span>
+                          </div>
+                          {appointment && (
+                            <div style={{ marginTop: '0.75rem', fontSize: '0.9rem', color: '#333' }}>
+                              <p style={{ margin: '0.25rem 0 0' }}><strong>Patient:</strong> {appointment.patient?.name || appointment.patient?.email}</p>
+                              <p style={{ margin: '0.25rem 0 0' }}><strong>Reason:</strong> {appointment.reason}</p>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })
+                  )}
                 </div>
-                <div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#007bff' }}>●</div>
-                  <div style={{ fontSize: '0.9rem' }}>Partial</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#dc3545' }}>●</div>
-                  <div style={{ fontSize: '0.9rem' }}>Full</div>
-                </div>
-              </div>
+              ) : null}
             </div>
           </div>
         )}

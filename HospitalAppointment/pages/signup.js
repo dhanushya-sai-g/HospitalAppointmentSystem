@@ -134,9 +134,12 @@ export default function Signup() {
                 <label>I am a *</label>
                 <select value={form.role} onChange={handleRoleChange} required>
                   <option value="PATIENT">Patient</option>
-                  <option value="DOCTOR">Doctor</option>
                   <option value="HOSPITAL_ADMIN">Hospital Administrator</option>
                 </select>
+              </div>
+
+              <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>
+                Doctor accounts are created by a hospital admin; doctors cannot sign up directly.
               </div>
 
               {form.role === 'HOSPITAL_ADMIN' && (
@@ -197,37 +200,6 @@ export default function Signup() {
                 </div>
               )}
 
-              {form.role === 'DOCTOR' && (
-                <>
-                  <div className="form-group">
-                    <label>Hospital *</label>
-                    <select
-                      value={form.hospitalId}
-                      onChange={handleHospitalChange}
-                      required
-                    >
-                      <option value="">Select a hospital</option>
-                      {hospitals.map(h => (
-                        <option key={h.id} value={h.id}>{h.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Department *</label>
-                    <select
-                      value={form.departmentId}
-                      onChange={e => setForm({ ...form, departmentId: e.target.value })}
-                      required
-                    >
-                      <option value="">Select a department</option>
-                      {departments.map(d => (
-                        <option key={d.id} value={d.id}>{d.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </>
-              )}
 
               {msg && <div className="alert alert-danger">{msg}</div>}
 

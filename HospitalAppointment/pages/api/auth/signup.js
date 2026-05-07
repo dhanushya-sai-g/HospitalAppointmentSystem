@@ -9,6 +9,10 @@ export default async function handler(req, res) {
   const existing = await prisma.user.findUnique({ where: { email } })
   if (existing) return res.status(400).json({ error: 'email already in use' })
 
+  if (role === 'DOCTOR') {
+    return res.status(403).json({ error: 'doctor accounts must be created by a hospital admin' })
+  }
+
   const hashed = await hashPassword(password)
 
   if (role === 'HOSPITAL_ADMIN') {
